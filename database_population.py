@@ -1079,11 +1079,12 @@ def validate_placings(tournament_id=None, auto_fix=False, verbose=False, ignore=
         cur.execute('SELECT id FROM tournaments')
         tournaments = []
         for row in cur:
-            if row[0] not in ignore_ids:
+            if row[0] not in ignore:
                 tournaments.append(row[0])
     else:
         tournaments = [tournament_id]
     
+    bad_tournaments = []
 
     for tournament in tournaments:
         placings = []
@@ -1103,6 +1104,7 @@ def validate_placings(tournament_id=None, auto_fix=False, verbose=False, ignore=
 
             if placings[i][1] != placings_above + 1:
                 print(f'!!! {tournament} has placings that do not line up!')
+                bad_tournaments.append(tournament)
                 bad_placings = True
                 break
 
@@ -1119,6 +1121,7 @@ def validate_placings(tournament_id=None, auto_fix=False, verbose=False, ignore=
                 else:
                     cur.execute('UPDATE placings SET place = ? WHERE place = ? AND tournament_id = ?', (new_placing, u_placing, tournament))
                     con.commit()
+            print(f'autofixed {tournament}')
 
 
         # check for very fine placings
@@ -1128,10 +1131,14 @@ def validate_placings(tournament_id=None, auto_fix=False, verbose=False, ignore=
 
         if len(placings_uniq) > 2 * math.log(len(placings_trunc), 2) + 2:
             print(f'!!! {tournament} has very fine placings - {len(placings_uniq)} / {len(placings_trunc)}')
+            bad_tournaments.append(tournament)
             bad_placings = True
 
         if verbose and not bad_placings:
             print(f'{tournament} appears to have no issues')
+
+    if verbose:
+        print('\n'.join(["'" + tour + "'" for tour in bad_tournaments]))
 
 
     cur.close()
@@ -1141,7 +1148,8 @@ con = sqlite3.connect('ur_db_2026.db')
 merges = get_merges()
 
 if __name__ == '__main__':
-    add_tournament("E-SPORTS \"GAME U\" FCPYS", 'e-sports-game-u-fcpys/ultimate-singles', 115, 'Central Mexico', '2026-04-27')
+    add_tournament("Smash Israel at Rotemz 16", 'smash-israel-at-rotemz-16/ultimate-singles', 225, 'Israel', '2026-10-15')
+    remove_tournament('smash-israel-at-rotemz-16')
 
     # populate_set_order_startgg_from_ids('bayer-cup-grande-finale__ultimate-singles', 'tournament/bayer-cup-grande-finale/event/ultimate-singles')
     # tournaments = []
